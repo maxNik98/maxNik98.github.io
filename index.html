@@ -710,22 +710,22 @@ const LAT = {
 
   'd-latch': {
     name: 'Latch D (Delay/Data)',
-    inps: ['E','D'],
+    inps: ['EN','D'],
     desc: `
       <p class="desc">
         El <strong>latch D (Data o Delay)</strong> es una modificación del latch SR que elimina
         el estado inválido. Tiene una entrada <code>D</code> (Data) y una entrada 
-        <code>E</code> (Enable/Habilitación). Internamente, D se conecta a S y 
+        <code>EN</code> (Enable/Habilitación). Internamente, D se conecta a S y 
         <strong>D̅</strong> se conecta a R a través de un inversor, garantizando que 
         S y R nunca sean 1 simultáneamente.
       </p>
       <p class="desc"><strong>Ecuación característica:</strong></p>
-      <div class="formula">Q<sub>n+1</sub> = E · D + Ē · Q<sub>n</sub></div>
+      <div class="formula">Q<sub>n+1</sub> = EN · D + <span style="text-decoration:overline">EN</span> · Q<sub>n</sub></div>
       <p class="desc"><strong>funcionamiento paso a paso:</strong></p>
       <ul class="desc">
-        <li><strong>E=0 → Hold:</strong> El latch ignora D y mantiene su estado (memoriza).</li>
-        <li><strong>E=1, D=0 → Reset:</strong> Q=0 (Q̅=1).</li>
-        <li><strong>E=1, D=1 → Set:</strong> Q=1 (Q̅=0).</li>
+        <li><strong>EN=0 → Hold:</strong> El latch ignora D y mantiene su estado (memoriza).</li>
+        <li><strong>EN=1, D=0 → Reset:</strong> Q=0 (Q̅=1).</li>
+        <li><strong>EN=1, D=1 → Set:</strong> Q=1 (Q̅=0).</li>
       </ul>
       <p class="desc">
         💡 Se llama "Delay" porque la salida Q sigue a D con un delay de 1 ciclo de reloj
@@ -733,7 +733,7 @@ const LAT = {
       </p>
     `,
     tt: [
-      ['E','D','Q','Q̅','Estado'],
+      ['EN','D','Q','Q̅','Estado'],
       ['0','—','Q₀','Q̅₀','Hold (bloqueado)'],
       ['1','0','0','1','Reset'],
       ['1','1','1','0','Set'],
@@ -747,10 +747,10 @@ const LAT = {
     colorInput2: '#1abc9c',
     exs: [
       {title:'Ej.1: D latch básico', init:0,
-       steps:[{e:1,d:1},{e:1,d:0},{e:0,d:1},{e:1,d:1},{e:1,d:1}],
+       steps:[{en:1,d:1},{en:1,d:0},{en:0,d:1},{en:1,d:1},{en:1,d:1}],
        ans:[1,0,0,1,1]},
       {title:'Ej.2: Enable bloquea cambios', init:0,
-       steps:[{e:1,d:1},{e:0,d:0},{e:0,d:1},{e:1,d:0},{e:1,d:1}],
+       steps:[{en:1,d:1},{en:0,d:0},{en:0,d:1},{en:1,d:0},{en:1,d:1}],
        ans:[1,1,1,0,1]},
     ]
   }
@@ -1273,7 +1273,7 @@ function renderTeoria() {
           <tr><td>Estado inválido</td><td class="yes">S=R=1</td><td class="yes">S̅=R̅=0</td><td class="no">No tiene</td><td class="no">No tiene</td><td class="yes">S=R=1</td><td class="no">No tiene</td></tr>
           <tr><td>Toggle</td><td class="no">No</td><td class="no">No</td><td class="yes">J=K=1</td><td class="yes">J=K=1</td><td class="no">No</td><td class="no">No</td></tr>
           <tr><td>Hold (E=0)</td><td class="no">No</td><td class="no">No</td><td class="no">No</td><td class="no">No</td><td class="yes">Sí</td><td class="yes">Sí</td></tr>
-          <tr><td>Ecuación característica</td><td>S + R̅·Q</td><td>S̅ + R̅·Q</td><td>J·Q̅ + K̅·Q</td><td>J·Q̅ + K̅·Q</td><td>E·(S + R̅·Q)</td><td>E·D + Ē·Q</td></tr>
+          <tr><td>Ecuación característica</td><td>S + R̅·Q</td><td>S̅ + R̅·Q</td><td>J·Q̅ + K̅·Q</td><td>J·Q̅ + K̅·Q</td><td>E·(S + R̅·Q)</td><td>EN·D + EN̅·Q</td></tr>
         </tbody>
       </table>
     </div>
