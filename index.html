@@ -1263,6 +1263,28 @@ function renderTeoria() {
   </div>
 
   <div class="full-card">
+    <h4>⚠️ 0-0 después de estado inválido (Carrera)</h4>
+    <p>
+      <strong>Problema critical en SR-NOR:</strong> cuando se tienen <strong>S=1, R=1</strong>
+      (estado inválido, Q=0, Q̅=0) y luego se pasa a <strong>S=0, R=0</strong> (Hold),
+      ambas compuertas NOR ven (0,0) en sus entradas y <strong>ambas intentan ir a 1</strong>.
+    </p>
+    <p style="margin-top:8px;">
+      El resultado es <strong>impredecible</strong> porque depende de qué compuerta
+      sea más rápida (diferencia en tiempos de propagación). Si la NOR superior es más rápida,
+      Q llega primero a 1 y el latch termina en <strong>SET</strong>. Si la NOR inferior
+      es más rápida, Q̅ llega primero a 1 y termina en <strong>RESET</strong>.
+    </p>
+    <div class="formula" style="margin:8px 0;">
+      S=1,R=1 → S=0,R=0  ⇒  Q = ??? (indeterminado / carrera)
+    </div>
+    <p style="color:var(--text2);font-size:.9rem;">
+      💡 Por esto se dice que S=R=1 es <strong>prohibido</strong> en SR-NOR.
+      El latch JK y el D latch resuelven este problema.
+    </p>
+  </div>
+
+  <div class="full-card">
     <h4>📊 4. Comparativa de Latches</h4>
     <div class="compare-table-wrap">
       <table>
