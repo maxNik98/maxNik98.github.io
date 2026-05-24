@@ -1280,8 +1280,12 @@ function renderTeoria() {
     </div>
     <p style="color:var(--text2);font-size:.9rem;">
       💡 Por esto se dice que S=R=1 es <strong>prohibido</strong> en SR-NOR.
-      El latch JK y el D latch resuelven este problema.
+      El latch JK y el D latch resuelven este problema:
     </p>
+    <ul style="color:var(--text2);font-size:.9rem;margin-top:4px;">
+      <li><strong>JK:</strong> Reemplaza el estado inválido por <strong>Toggle</strong> (Q cambia al opuesto). Agrega rutas de realimentación que usan Q y Q̅ para garantizar que nunca haya un estado donde ambas salidas sean iguales.</li>
+      <li><strong>D:</strong> Pone un <strong>inversor</strong> entre las entradas S y R, de forma que S = D y R = <strong>D̅</strong>. Así S y R SIEMPRE son complementarios y el estado inválido es <strong>físicamente imposible</strong>.</li>
+    </ul>
   </div>
 
   <div class="full-card">
