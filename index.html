@@ -1,0 +1,1680 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Estudio de Latches - Sistemas Digitales</title>
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1a1a2e">
+<style>
+:root {
+  --bg: #1a1a2e;
+  --surface: #16213e;
+  --card: #0f3460;
+  --accent: #e94560;
+  --text: #eee;
+  --text2: #aaa;
+  --border: #2a2a4a;
+  --green: #2ecc71;
+  --red: #e74c3c;
+  --blue: #3498db;
+  --orange: #e67e22;
+  --purple: #9b59b6;
+  --yellow: #f1c40f;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 20px;
+}
+.container { max-width: 1100px; margin: 0 auto; }
+h1 {
+  text-align: center;
+  font-size: 1.8rem;
+  padding: 20px 0;
+  background: linear-gradient(135deg, var(--accent), var(--purple));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+h1 small { font-size: 1rem; -webkit-text-fill-color: var(--text2); }
+h2 {
+  font-size: 1.3rem;
+  margin: 20px 0 10px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid var(--accent);
+  color: var(--accent);
+}
+h3 { font-size: 1.1rem; margin: 15px 0 8px; color: var(--blue); }
+
+/* Tabs */
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  margin: 15px 0 25px;
+}
+.tab-btn {
+  padding: 10px 20px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text2);
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition: all .2s;
+}
+.tab-btn:hover { border-color: var(--accent); color: var(--text); }
+.tab-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+/* Content sections */
+.section {
+  display: none;
+  animation: fadeIn .3s;
+}
+.section.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px;
+  margin: 12px 0;
+}
+
+/* Tables */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 10px 0;
+  font-size: 0.92rem;
+}
+th, td {
+  border: 1px solid var(--border);
+  padding: 8px 12px;
+  text-align: center;
+}
+th { background: var(--card); color: var(--accent); font-weight: 700; }
+td { background: var(--surface); }
+td.high { color: var(--green); font-weight: 700; }
+td.low { color: var(--red); font-weight: 700; }
+td.invalid { color: var(--yellow); font-weight: 700; }
+td.hold { color: var(--blue); font-style: italic; }
+td.toggle { color: var(--purple); font-weight: 700; }
+
+/* Simulator */
+.sim-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin: 10px 0;
+}
+.sim-controls label { font-weight: 600; color: var(--text2); }
+.sim-controls select {
+  padding: 6px 12px;
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  background: var(--card);
+  color: var(--text);
+  font-size: 1rem;
+  cursor: pointer;
+}
+.sim-state {
+  display: flex;
+  gap: 25px;
+  margin: 12px 0;
+  flex-wrap: wrap;
+}
+.sim-state .state-box {
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 1.5rem;
+  font-weight: 700;
+  min-width: 80px;
+  text-align: center;
+}
+.state-box.q { background: rgba(46,204,113,.15); border: 2px solid var(--green); color: var(--green); }
+.state-box.qb { background: rgba(231,76,60,.15); border: 2px solid var(--red); color: var(--red); }
+.state-box.invalid-state { background: rgba(241,196,15,.15); border: 2px solid var(--yellow); color: var(--yellow); }
+.state-label { font-size: .75rem; font-weight: 400; color: var(--text2); display: block; margin-bottom: 4px; }
+
+.btn {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: .9rem;
+  transition: all .2s;
+}
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { filter: brightness(1.15); transform: translateY(-1px); }
+.btn-secondary { background: var(--card); color: var(--text); border: 1px solid var(--border); }
+.btn-secondary:hover { border-color: var(--accent); }
+.btn-success { background: var(--green); color: #fff; }
+.btn-success:hover { filter: brightness(1.15); }
+.btn-sm { padding: 4px 12px; font-size: .8rem; }
+
+/* History table */
+.history-wrap { max-height: 200px; overflow-y: auto; margin-top: 10px; }
+.history-wrap table { font-size: .85rem; }
+.history-wrap th { position: sticky; top: 0; }
+
+/* Timing diagram */
+.timing-controls { margin: 10px 0; }
+.timing-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+.timing-step {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  min-width: 100px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.timing-step .step-num { font-size: .75rem; color: var(--text2); margin-bottom: 4px; }
+.timing-step select { padding: 2px 6px; font-size: .8rem; }
+.timing-step .remove-step {
+  display: inline-block;
+  margin-top: 4px;
+  color: var(--red);
+  cursor: pointer;
+  font-size: .75rem;
+}
+.timing-step .remove-step:hover { text-decoration: underline; }
+
+canvas {
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  margin: 10px 0;
+}
+
+/* Description text */
+.desc { color: var(--text2); line-height: 1.7; margin: 8px 0; }
+.desc strong { color: var(--text); }
+.desc code {
+  background: var(--card);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: .9em;
+  color: var(--blue);
+}
+.desc ul { padding-left: 25px; margin: 6px 0; }
+.desc ul li { margin: 4px 0; }
+
+.formula {
+  background: var(--card);
+  border-left: 4px solid var(--accent);
+  padding: 10px 16px;
+  margin: 10px 0;
+  font-family: 'Courier New', monospace;
+  font-size: 1rem;
+  border-radius: 0 6px 6px 0;
+  color: var(--yellow);
+}
+
+/* Exercises */
+.exercise-box {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  margin: 12px 0;
+}
+.exercise-box .ex-title { font-weight: 700; color: var(--accent); font-size: 1.05rem; }
+.exercise-box .ex-desc { color: var(--text2); margin: 6px 0; }
+.exercise-box canvas { margin: 8px 0; }
+.ex-answer {
+  display: none;
+  margin: 8px 0;
+  padding: 10px;
+  background: rgba(46,204,113,.1);
+  border: 1px solid var(--green);
+  border-radius: 6px;
+  color: var(--green);
+  font-weight: 600;
+}
+.ex-answer.show { display: block; }
+
+/* Signal legend */
+.legend { display: flex; flex-wrap: wrap; gap: 16px; margin: 8px 0; font-size: .85rem; }
+.legend-item { display: flex; align-items: center; gap: 6px; }
+.legend-dot {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.legend-dot.s { background: var(--blue); }
+.legend-dot.r { background: var(--orange); }
+.legend-dot.q { background: var(--green); }
+.legend-dot.qb { background: var(--red); }
+.legend-dot.e { background: var(--purple); }
+.legend-dot.j { background: var(--blue); }
+.legend-dot.k { background: var(--orange); }
+
+/* Step description */
+.step-info {
+  margin: 8px 0;
+  padding: 8px 12px;
+  background: var(--card);
+  border-radius: 6px;
+  color: var(--text2);
+  font-size: .9rem;
+}
+.step-info strong { color: var(--text); }
+
+/* Select all in timing */
+.timing-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin: 8px 0;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  body { padding: 10px; }
+  h1 { font-size: 1.3rem; }
+  .tab-btn { padding: 7px 12px; font-size: .82rem; }
+  .sim-state .state-box { font-size: 1.2rem; min-width: 60px; padding: 8px 16px; }
+}
+
+  /* Theory section */
+  .theory-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  @media (max-width: 700px) { .theory-grid { grid-template-columns: 1fr; } }
+
+  .concept-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  .concept-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 4px;
+    height: 100%;
+    border-radius: 10px 0 0 10px;
+  }
+  .concept-card.accent-feedback::before { background: var(--purple); }
+  .concept-card.accent-bistable::before { background: var(--blue); }
+  .concept-card.accent-meta::before { background: var(--yellow); }
+  .concept-card.accent-race::before { background: var(--orange); }
+  .concept-card.accent-latchff::before { background: var(--green); }
+  .concept-card.accent-apps::before { background: var(--accent); }
+
+  .concept-card h4 {
+    font-size: 1rem;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+  .concept-card p, .concept-card ul {
+    color: var(--text2);
+    font-size: .88rem;
+    line-height: 1.6;
+  }
+  .concept-card ul { padding-left: 18px; }
+  .concept-card ul li { margin: 3px 0; }
+  .concept-card strong { color: var(--text); }
+
+  .circuit-svg {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    margin: 10px auto;
+    border-radius: 8px;
+    background: #111;
+  }
+
+  .def-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .def-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .def-item .term {
+    font-weight: 700;
+    color: var(--blue);
+    font-size: .9rem;
+    margin-bottom: 4px;
+  }
+  .def-item .def { color: var(--text2); font-size: .82rem; line-height: 1.5; }
+
+  .compare-table-wrap { overflow-x: auto; }
+  .compare-table-wrap table { min-width: 500px; }
+  .compare-table-wrap td { font-size: .82rem; }
+  .compare-table-wrap td.yes { color: var(--green); font-weight: 700; }
+  .compare-table-wrap td.no { color: var(--red); }
+  .compare-table-wrap td.partial { color: var(--yellow); }
+
+  .info-highlight {
+    background: linear-gradient(135deg, rgba(233,69,96,.1), rgba(155,89,182,.1));
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin: 12px 0;
+    color: var(--text);
+    font-size: .9rem;
+    line-height: 1.6;
+  }
+  .info-highlight strong { color: var(--accent); }
+
+  .full-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+    margin: 12px 0;
+  }
+  .full-card h4 {
+    color: var(--accent);
+    font-size: 1.05rem;
+    margin-bottom: 10px;
+  }
+  .full-card p, .full-card ul {
+    color: var(--text2);
+    font-size: .9rem;
+    line-height: 1.7;
+  }
+  .full-card ul { padding-left: 20px; }
+  .full-card ul li { margin: 4px 0; }
+  .full-card strong { color: var(--text); }
+  .full-card code {
+    background: var(--card);
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: .9em;
+    color: var(--blue);
+  }
+  .state-diagram {
+    font-family: 'Courier New', monospace;
+    font-size: .85rem;
+    color: var(--yellow);
+    line-height: 1.6;
+    background: var(--bg);
+    padding: 12px;
+    border-radius: 6px;
+    margin: 8px 0;
+    white-space: pre;
+    overflow-x: auto;
+  }
+</style>
+
+</head>
+<body>
+<div class="container">
+  <h1>🔌 Estudio de Latches <small>Sistemas Digitales</small></h1>
+
+  <div class="tabs" id="tabBar">
+    <button class="tab-btn active" data-tab="sr-nor">SR (NOR)</button>
+    <button class="tab-btn" data-tab="sr-nand">SR (NAND)</button>
+    <button class="tab-btn" data-tab="jk-nand">JK (NAND)</button>
+    <button class="tab-btn" data-tab="jk-nor">JK (NOR)</button>
+    <button class="tab-btn" data-tab="enable">Enable</button>
+    <button class="tab-btn" data-tab="teoria">📖 Teoría</button>
+  </div>
+
+  <div id="contentArea"></div>
+</div>
+
+<script>
+const LAT = {
+  'sr-nor': {
+    name: 'Latch SR con compuertas NOR',
+    inps: ['S','R'],
+    desc: `
+      <p class="desc">
+        El <strong>latch SR con compuertas NOR</strong> es el circuito biestable fundamental. 
+        Tiene dos entradas: <code>S</code> (Set) y <code>R</code> (Reset), y dos salidas: <code>Q</code> y <code>Q̅</code> (Q negada).
+        Las salidas siempre son complementarias, excepto en el estado inválido.
+      </p>
+      <p class="desc"><strong>Ecuación característica:</strong></p>
+      <div class="formula">Q<sub>n+1</sub> = S + R̅ · Q<sub>n</sub></div>
+      <p class="desc"><strong>funcionamiento paso a paso:</strong></p>
+      <ul class="desc">
+        <li><strong>S=0, R=0 → Hold:</strong> El latch mantiene su estado anterior (memoriza).</li>
+        <li><strong>S=1, R=0 → Set:</strong> Q se pone en 1 (Q̅=0).</li>
+        <li><strong>S=0, R=1 → Reset:</strong> Q se pone en 0 (Q̅=1).</li>
+        <li><strong>S=1, R=1 → Inválido:</strong> Q=0 y Q̅=0 (no son complementarios). ¡No usar!</li>
+      </ul>
+    `,
+    tt: [
+      ['S','R','Q','Q̅','Estado'],
+      ['0','0','Q₀','Q̅₀','Hold (Memoriza)'],
+      ['1','0','1','0','Set'],
+      ['0','1','0','1','Reset'],
+      ['1','1','0','0','Inválido'],
+    ],
+    next(s,r,q) {
+      if (s===0 && r===0) return {q, qb: 1-q, note:'Hold'};
+      if (s===1 && r===0) return {q:1, qb:0, note:'Set'};
+      if (s===0 && r===1) return {q:0, qb:1, note:'Reset'};
+      return {q:0, qb:0, note:'Inválido', invalid:true};
+    },
+    colorInput1: '#3498db',
+    colorInput2: '#e67e22',
+    exs: [
+      {title:'Ej.1: Set y Reset', init:0,
+       steps:[{s:0,r:0},{s:1,r:0},{s:0,r:0},{s:0,r:1},{s:0,r:0}],
+       ans:[0,1,1,0,0]},
+      {title:'Ej.2: Múltiples transiciones', init:0,
+       steps:[{s:1,r:0},{s:0,r:0},{s:1,r:0},{s:0,r:1},{s:1,r:0}],
+       ans:[1,1,1,0,1]},
+      {title:'Ej.3: Hold prolongado', init:0,
+       steps:[{s:0,r:0},{s:0,r:0},{s:0,r:1},{s:0,r:0},{s:0,r:0}],
+       ans:[0,0,0,0,0]},
+    ]
+  },
+
+  'sr-nand': {
+    name: 'Latch SR con compuertas NAND (entradas activas en baja)',
+    inps: ['S̅','R̅'],
+    desc: `
+      <p class="desc">
+        El <strong>latch SR con compuertas NAND</strong> usa entradas <strong>activas en baja</strong>
+        (se activan con 0, no con 1). Se denotan como <code>S̅</code> (S negada) y <code>R̅</code> (R negada).
+        Por defecto, las entradas están en 1 (reposo) y se activan llevándolas a 0.
+      </p>
+      <p class="desc"><strong>funcionamiento paso a paso:</strong></p>
+      <ul class="desc">
+        <li><strong>S̅=1, R̅=1 → Hold:</strong> Estado de reposo. Mantiene el valor anterior.</li>
+        <li><strong>S̅=0, R̅=1 → Set:</strong> Pone Q=1 (Q̅=0).</li>
+        <li><strong>S̅=1, R̅=0 → Reset:</strong> Pone Q=0 (Q̅=1).</li>
+        <li><strong>S̅=0, R̅=0 → Inválido:</strong> Q=1 y Q̅=1 (no complementarios). ¡No usar!</li>
+      </ul>
+      <p class="desc">
+        💡 <strong>Nota:</strong> Las entradas activas en baja se indican con la barra (
+        <code>S̅</code>, <code>R̅</code>) y se activan con nivel lógico 0.
+      </p>
+    `,
+    tt: [
+      ['S̅','R̅','Q','Q̅','Estado'],
+      ['1','1','Q₀','Q̅₀','Hold (Reposo)'],
+      ['0','1','1','0','Set (S̅ activo)'],
+      ['1','0','0','1','Reset (R̅ activo)'],
+      ['0','0','1','1','Inválido'],
+    ],
+    next(s,r,q) {
+      if (s===1 && r===1) return {q, qb: 1-q, note:'Hold'};
+      if (s===0 && r===1) return {q:1, qb:0, note:'Set'};
+      if (s===1 && r===0) return {q:0, qb:1, note:'Reset'};
+      return {q:1, qb:1, note:'Inválido', invalid:true};
+    },
+    colorInput1: '#3498db',
+    colorInput2: '#e67e22',
+    exs: [
+      {title:'Ej.1: Set y Reset activos en baja', init:0,
+       steps:[{s:1,r:1},{s:0,r:1},{s:1,r:1},{s:1,r:0},{s:1,r:1}],
+       ans:[0,1,1,0,0]},
+      {title:'Ej.2: Pulso de Set', init:0,
+       steps:[{s:1,r:1},{s:0,r:1},{s:1,r:1},{s:0,r:1},{s:1,r:1}],
+       ans:[0,1,1,1,1]},
+      {title:'Ej.3: Alternando Set/Reset', init:0,
+       steps:[{s:0,r:1},{s:1,r:1},{s:1,r:0},{s:1,r:1},{s:0,r:1}],
+       ans:[1,1,0,0,1]},
+    ]
+  },
+
+  'jk-nand': {
+    name: 'Latch JK con compuertas NAND',
+    inps: ['J','K'],
+    desc: `
+      <p class="desc">
+        El <strong>latch JK</strong> resuelve el problema del estado inválido del latch SR.
+        Cuando J=1 y K=1, en lugar de ser inválido, <strong>conmuta (toggle)</strong>:
+        Q cambia al valor opuesto.
+      </p>
+      <p class="desc"><strong>Ecuación característica:</strong></p>
+      <div class="formula">Q<sub>n+1</sub> = J · Q̅<sub>n</sub> + K̅ · Q<sub>n</sub></div>
+      <p class="desc"><strong>funcionamiento paso a paso:</strong></p>
+      <ul class="desc">
+        <li><strong>J=0, K=0 → Hold:</strong> Mantiene el estado.</li>
+        <li><strong>J=1, K=0 → Set:</strong> Q=1.</li>
+        <li><strong>J=0, K=1 → Reset:</strong> Q=0.</li>
+        <li><strong>J=1, K=1 → Toggle:</strong> Q = Q̅ (conmuta).</li>
+      </ul>
+      <p class="desc">
+        💡 El latch JK con NAND se implementa con retroalimentación cruzada
+        similar al SR-NAND, pero con compuertas adicionales que permiten el toggle.
+      </p>
+    `,
+    tt: [
+      ['J','K','Q','Q̅','Estado'],
+      ['0','0','Q₀','Q̅₀','Hold'],
+      ['1','0','1','0','Set'],
+      ['0','1','0','1','Reset'],
+      ['1','1','Q̅₀','Q₀','Toggle'],
+    ],
+    next(j,k,q) {
+      if (j===0 && k===0) return {q, qb: 1-q, note:'Hold'};
+      if (j===1 && k===0) return {q:1, qb:0, note:'Set'};
+      if (j===0 && k===1) return {q:0, qb:1, note:'Reset'};
+      return {q: 1-q, qb: q, note:'Toggle'};
+    },
+    colorInput1: '#3498db',
+    colorInput2: '#e67e22',
+    exs: [
+      {title:'Ej.1: Toggle', init:0,
+       steps:[{j:0,k:0},{j:1,k:1},{j:0,k:0},{j:0,k:1},{j:1,k:0}],
+       ans:[0,1,1,0,1]},
+      {title:'Ej.2: Secuencia completa', init:0,
+       steps:[{j:1,k:0},{j:0,k:0},{j:0,k:1},{j:1,k:1},{j:0,k:0}],
+       ans:[1,1,0,1,1]},
+      {title:'Ej.3: Toggle múltiple', init:0,
+       steps:[{j:1,k:1},{j:1,k:1},{j:0,k:0},{j:1,k:0},{j:0,k:1}],
+       ans:[1,0,0,1,0]},
+    ]
+  },
+
+  'jk-nor': {
+    name: 'Latch JK con compuertas NOR',
+    inps: ['J','K'],
+    desc: `
+      <p class="desc">
+        El <strong>latch JK con compuertas NOR</strong> tiene el mismo funcionamiento 
+        que el JK con NAND (misma tabla de verdad). La diferencia es la 
+        <strong>implementación interna</strong>: usa compuertas NOR en lugar de NAND.
+      </p>
+      <p class="desc"><strong>Ecuación característica:</strong></p>
+      <div class="formula">Q<sub>n+1</sub> = J · Q̅<sub>n</sub> + K̅ · Q<sub>n</sub></div>
+      <p class="desc"><strong>funcionamiento paso a paso:</strong></p>
+      <ul class="desc">
+        <li><strong>J=0, K=0 → Hold:</strong> Mantiene el estado.</li>
+        <li><strong>J=1, K=0 → Set:</strong> Q=1.</li>
+        <li><strong>J=0, K=1 → Reset:</strong> Q=0.</li>
+        <li><strong>J=1, K=1 → Toggle:</strong> Q = Q̅ (conmuta).</li>
+      </ul>
+      <p class="desc">
+        💡 La versión NOR tiene una construcción diferente internamente, pero 
+        su comportamiento externo es idéntico al JK-NAND.
+      </p>
+    `,
+    tt: [
+      ['J','K','Q','Q̅','Estado'],
+      ['0','0','Q₀','Q̅₀','Hold'],
+      ['1','0','1','0','Set'],
+      ['0','1','0','1','Reset'],
+      ['1','1','Q̅₀','Q₀','Toggle'],
+    ],
+    next(j,k,q) {
+      if (j===0 && k===0) return {q, qb: 1-q, note:'Hold'};
+      if (j===1 && k===0) return {q:1, qb:0, note:'Set'};
+      if (j===0 && k===1) return {q:0, qb:1, note:'Reset'};
+      return {q: 1-q, qb: q, note:'Toggle'};
+    },
+    colorInput1: '#3498db',
+    colorInput2: '#e67e22',
+    exs: [
+      {title:'Ej.1: JK-NOR básico', init:0,
+       steps:[{j:0,k:0},{j:1,k:0},{j:0,k:0},{j:0,k:1},{j:0,k:0}],
+       ans:[0,1,1,0,0]},
+      {title:'Ej.2: Toggle y Set', init:0,
+       steps:[{j:1,k:1},{j:0,k:0},{j:1,k:0},{j:0,k:1},{j:1,k:1}],
+       ans:[1,1,1,0,1]},
+    ]
+  },
+
+  'enable': {
+    name: 'Latches con entrada de Habilitación (Enable)',
+    inps: ['E','S','R'],
+    hdrInps: ['Enable','S','R'],
+    desc: `
+      <p class="desc">
+        La entrada de <strong>Habilitación (Enable, E)</strong> controla cuándo el latch
+        puede cambiar de estado. Cuando <code>E=1</code>, el latch funciona normalmente
+        (transparente). Cuando <code>E=0</code>, el latch ignora las entradas y 
+        <strong>mantiene su estado</strong> (memoriza).
+      </p>
+      <p class="desc">Este es un <strong>Latch SR con Enable</strong> (compuertas NOR + AND).</p>
+      <p class="desc"><strong>funcionamiento paso a paso:</strong></p>
+      <ul class="desc">
+        <li><strong>E=0:</strong> Latch bloqueado → Hold (Q no cambia).</li>
+        <li><strong>E=1, S=0, R=0 → Hold:</strong> Mantiene el estado.</li>
+        <li><strong>E=1, S=1, R=0 → Set:</strong> Q=1.</li>
+        <li><strong>E=1, S=0, R=1 → Reset:</strong> Q=0.</li>
+        <li><strong>E=1, S=1, R=1 → Inválido:</strong> igual que SR-NOR.</li>
+      </ul>
+      <p class="desc">
+        💡 También existen versiones con <strong>Enable activo en baja</strong> (E̅=0 habilita)
+        y versiones JK con Enable.
+      </p>
+    `,
+    inps3: true,
+    tt: [
+      ['E','S','R','Q','Q̅','Estado'],
+      ['0','—','—','Q₀','Q̅₀','Hold (bloqueado)'],
+      ['1','0','0','Q₀','Q̅₀','Hold'],
+      ['1','1','0','1','0','Set'],
+      ['1','0','1','0','1','Reset'],
+      ['1','1','1','0','0','Inválido'],
+    ],
+    next(e,s,r,q) {
+      if (e===0) return {q, qb: 1-q, note:'Hold (E=0)'};
+      if (s===0 && r===0) return {q, qb: 1-q, note:'Hold'};
+      if (s===1 && r===0) return {q:1, qb:0, note:'Set'};
+      if (s===0 && r===1) return {q:0, qb:1, note:'Reset'};
+      return {q:0, qb:0, note:'Inválido', invalid:true};
+    },
+    colorInput1: '#9b59b6',
+    colorInput2: '#3498db',
+    colorInput3: '#e67e22',
+    exs: [
+      {title:'Ej.1: Enable bloquea', init:0,
+       steps:[{e:1,s:0,r:0},{e:1,s:1,r:0},{e:0,s:1,r:0},{e:1,s:0,r:0},{e:1,s:0,r:1}],
+       ans:[0,1,1,1,0]},
+      {title:'Ej.2: Enable intermitente', init:0,
+       steps:[{e:1,s:1,r:0},{e:0,s:0,r:1},{e:1,s:0,r:0},{e:0,s:1,r:0},{e:1,s:0,r:1}],
+       ans:[1,1,1,1,0]},
+      {title:'Ej.3: Secuencia completa', init:0,
+       steps:[{e:0,s:1,r:0},{e:1,s:1,r:0},{e:1,s:0,r:0},{e:1,s:0,r:1},{e:0,s:0,r:1}],
+       ans:[0,1,1,0,0]},
+    ]
+  }
+};
+
+const state = { cur: 'sr-nor', sim: {}, history: [], timingSteps: [], exerciseIdx: 0, exRevealed: false };
+
+function init() {
+  for (const k of Object.keys(LAT)) {
+    state.sim[k] = { q: 0, qb: 1 };
+    state.history[k] = [];
+  }
+  for (const k of Object.keys(LAT)) {
+    state.timingSteps[k] = Array(5).fill(null).map((_,i) => {
+      const o = {};
+      if (LAT[k].inps3) { o.e='1'; o.s='0'; o.r='0'; }
+      else { o[LAT[k].inps[0].toLowerCase()]='0'; o[LAT[k].inps[1].toLowerCase()]='0'; }
+      return o;
+    });
+  }
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    b.addEventListener('click', () => switchTab(b.dataset.tab));
+  });
+  renderTab(state.cur);
+}
+
+function switchTab(id) {
+  state.cur = id;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === id));
+  renderTab(id);
+}
+
+function renderTab(id) {
+  const area = document.getElementById('contentArea');
+
+  if (id === 'teoria') {
+    area.innerHTML = renderTeoria();
+    return;
+  }
+
+  const l = LAT[id];
+  const i1 = l.inps[0].toLowerCase(), i2 = l.inps[1].toLowerCase();
+  const c1 = l.colorInput1, c2 = l.colorInput2, c3 = l.colorInput3;
+  const inpName1 = l.inps[0], inpName2 = l.inps[1];
+
+  let ttHtml = '';
+  if (l.inps3) {
+    ttHtml = `<table><thead><tr>${l.tt[0].map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>`;
+    for (let i=1; i<l.tt.length; i++) {
+      const r = l.tt[i];
+      let cls = '';
+      if (i===4) cls='invalid';
+      else if (i===1) cls='hold';
+      else if (i===2) cls='high';
+      else if (i===3) cls='low';
+      ttHtml += `<tr>${r.map((c,j)=>{
+        if (j===0 && c==='0') return `<td class="low">0</td>`;
+        if (j===0 && c==='1') return `<td class="high">1</td>`;
+        if (j===0 && c==='—') return `<td>—</td>`;
+        if (j===1 && c==='—') return `<td>—</td>`;
+        if (j===1 && c==='0') return `<td class="low">0</td>`;
+        if (j===1 && c==='1') return `<td class="high">1</td>`;
+        if (j===2 && c==='0') return `<td class="low">0</td>`;
+        if (j===2 && c==='1') return `<td class="high">1</td>`;
+        if (j===2 && c==='—') return `<td>—</td>`;
+        if (j===3 && c==='0') return `<td class="low">0</td>`;
+        if (j===3 && c==='1') return `<td class="high">1</td>`;
+        if (j===3 && c==='Q₀') return `<td class="hold">${c}</td>`;
+        if (j===4 && c==='Q̅₀') return `<td class="hold">${c}</td>`;
+        return `<td>${c}</td>`;
+      }).join('')}</tr>`;
+    }
+    ttHtml += '</tbody></table>';
+  } else {
+    ttHtml = `<table><thead><tr>${l.tt[0].map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>`;
+    for (let i=1; i<l.tt.length; i++) {
+      const r = l.tt[i];
+      ttHtml += `<tr>${r.map((c,j)=>{
+        if (c==='0') return `<td class="low">0</td>`;
+        if (c==='1') return `<td class="high">1</td>`;
+        if (c==='Q₀'||c==='Q̅₀') return `<td class="hold">${c}</td>`;
+        if (j===4) return `<td>${c}</td>`;
+        return `<td>${c}</td>`;
+      }).join('')}</tr>`;
+    }
+    ttHtml += '</tbody></table>';
+  }
+
+  const sim = state.sim[id];
+  let noteClass = '';
+  let noteText = 'Hold - Q no cambia';
+  if (sim.q===0 && sim.qb===0) { noteClass='invalid'; noteText='⚠ Inválido'; }
+  else if (sim.q===1 && sim.qb===0) { noteText='Set - Q=1'; }
+  else if (sim.q===0 && sim.qb===1) { noteText='Reset - Q=0'; }
+
+  let simInputsHtml = '';
+  if (l.inps3) {
+    simInputsHtml = `
+      <label>E:</label>
+      <select id="simE">
+        <option value="0">0</option>
+        <option value="1" selected>1</option>
+      </select>
+      <label>S:</label>
+      <select id="simS"><option value="0">0</option><option value="1">1</option></select>
+      <label>R:</label>
+      <select id="simR"><option value="0">0</option><option value="1">1</option></select>
+    `;
+  } else {
+    simInputsHtml = `
+      <label>${inpName1}:</label>
+      <select id="simA">
+        <option value="0">0</option>
+        <option value="1">1</option>
+      </select>
+      <label>${inpName2}:</label>
+      <select id="simB">
+        <option value="0">0</option>
+        <option value="1">1</option>
+      </select>
+    `;
+  }
+
+  let stateClass = 'q';
+  let stateLabel = 'Q';
+  if (noteClass==='invalid') { stateClass='invalid-state'; stateLabel='⚠'; }
+
+  const hist = state.history[id];
+  let histHtml = '';
+  if (hist.length > 0) {
+    let hdr = `<th>Paso</th><th>${inpName1}</th><th>${inpName2}</th>`;
+    if (l.inps3) hdr = `<th>Paso</th><th>E</th><th>S</th><th>R</th>`;
+    hdr += '<th>Q</th><th>Q̅</th><th>Estado</th>';
+    histHtml = `<div class="history-wrap"><table><thead><tr>${hdr}</tr></thead><tbody>`;
+    for (let i=0; i<hist.length; i++) {
+      const h = hist[i];
+      let cls = '';
+      if (h.invalid) cls='invalid';
+      else if (h.note==='Set') cls='high';
+      else if (h.note==='Reset') cls='low';
+      else cls='hold';
+      let cells = `<td>${i+1}</td>`;
+      if (l.inps3) cells += `<td class="${h.e==='1'?'high':'low'}">${h.e}</td><td class="${h.s==='1'?'high':'low'}">${h.s}</td><td class="${h.r==='1'?'high':'low'}">${h.r}</td>`;
+      else cells += `<td class="${h.a==='1'?'high':'low'}">${h.a}</td><td class="${h.b==='1'?'high':'low'}">${h.b}</td>`;
+      cells += `<td class="${h.q===1?'high':'low'}">${h.q}</td><td class="${h.qb===1?'high':'low'}">${h.qb}</td><td class="${cls}">${h.note}</td>`;
+      histHtml += `<tr>${cells}</tr>`;
+    }
+    histHtml += '</tbody></table></div>';
+  }
+
+  let legHtml = `<div class="legend">
+    <span class="legend-item"><span class="legend-dot" style="background:${c1}"></span> ${inpName1}</span>
+    <span class="legend-item"><span class="legend-dot" style="background:${c2}"></span> ${inpName2}</span>`;
+  if (l.inps3) legHtml += `<span class="legend-item"><span class="legend-dot" style="background:${c3}"></span> Enable (E)</span>`;
+  legHtml += `<span class="legend-item"><span class="legend-dot q"></span> Q</span>
+    <span class="legend-item"><span class="legend-dot qb"></span> Q̅</span>
+  </div>`;
+
+  const steps = state.timingSteps[id];
+  let timingInputsHtml = '';
+  if (l.inps3) {
+    timingInputsHtml = steps.map((s,idx) => `
+      <div class="timing-step">
+        <div class="step-num">Paso ${idx+1}</div>
+        <div>E <select data-tstep="${id}" data-tidx="${idx}" data-tvar="e">
+          <option value="0" ${s.e==='0'?'selected':''}>0</option>
+          <option value="1" ${s.e==='1'?'selected':''}>1</option>
+        </select></div>
+        <div>S <select data-tstep="${id}" data-tidx="${idx}" data-tvar="s">
+          <option value="0" ${s.s==='0'?'selected':''}>0</option>
+          <option value="1" ${s.s==='1'?'selected':''}>1</option>
+        </select></div>
+        <div>R <select data-tstep="${id}" data-tidx="${idx}" data-tvar="r">
+          <option value="0" ${s.r==='0'?'selected':''}>0</option>
+          <option value="1" ${s.r==='1'?'selected':''}>1</option>
+        </select></div>
+        <span class="remove-step" data-remove="${id}" data-ridx="${idx}">✕ eliminar</span>
+      </div>
+    `).join('');
+  } else {
+    timingInputsHtml = steps.map((s,idx) => `
+      <div class="timing-step">
+        <div class="step-num">Paso ${idx+1}</div>
+        <div>${inpName1} <select data-tstep="${id}" data-tidx="${idx}" data-tvar="${i1}">
+          <option value="0" ${s[i1]==='0'?'selected':''}>0</option>
+          <option value="1" ${s[i1]==='1'?'selected':''}>1</option>
+        </select></div>
+        <div>${inpName2} <select data-tstep="${id}" data-tidx="${idx}" data-tvar="${i2}">
+          <option value="0" ${s[i2]==='0'?'selected':''}>0</option>
+          <option value="1" ${s[i2]==='1'?'selected':''}>1</option>
+        </select></div>
+        <span class="remove-step" data-remove="${id}" data-ridx="${idx}">✕ eliminar</span>
+      </div>
+    `).join('');
+  }
+
+  let exHtml = '';
+  const exs = l.exs || [];
+  exs.forEach((ex, exIdx) => {
+    const eid = `ex_${id}_${exIdx}`;
+    const initVal = ex.init === 0 ? '0' : '1';
+    exHtml += `
+      <div class="exercise-box">
+        <div class="ex-title">${ex.title}</div>
+        <div class="ex-desc">Q inicial = ${initVal}. Determine Q en cada paso.</div>
+        <div id="${eid}_tab">${genExTimingTable(id, exIdx)}</div>
+        <canvas id="${eid}_canvas" height="160"></canvas>
+        <div id="${eid}_answer" class="ex-answer">${ex.ans.map((v,i)=>`Paso ${i+1}: Q=<strong>${v}</strong>`).join(' | ')}</div>
+        <button class="btn btn-success btn-sm" data-exreveal="${id}" data-exidx="${exIdx}">Mostrar respuesta</button>
+      </div>
+    `;
+  });
+
+  area.innerHTML = `
+    <div class="section active">
+      <h2>${l.name}</h2>
+
+      <div class="card">
+        <h3>📖 Explicación</h3>
+        ${l.desc}
+      </div>
+
+      <div class="card">
+        <h3>📊 Tabla de Verdad</h3>
+        ${ttHtml}
+      </div>
+
+      <div class="card">
+        <h3>🎮 Simulador Paso a Paso</h3>
+        <p class="desc">Seleccione las entradas y presione "Aplicar" para ver el resultado.</p>
+        <div class="sim-controls">
+          ${simInputsHtml}
+          <button class="btn btn-primary" id="simApplyBtn">▶ Aplicar</button>
+          <button class="btn btn-secondary" id="simResetBtn">↺ Reiniciar</button>
+        </div>
+        <div class="sim-state">
+          <div class="state-box ${stateClass}">
+            <span class="state-label">${stateLabel}</span>
+            ${sim.q}
+          </div>
+          <div class="state-box qb">
+            <span class="state-label">Q̅</span>
+            ${sim.qb}
+          </div>
+          <div style="display:flex;align-items:center;font-size:.9rem;color:var(--text2)">${noteText}</div>
+        </div>
+        ${hist.length > 0 ? `<div><h4 style="font-size:.95rem;color:var(--text2);margin-bottom:4px;">Historial:</h4>${histHtml}</div>` : ''}
+      </div>
+
+      <div class="card">
+        <h3>📈 Generador de Cronogramas</h3>
+        <p class="desc">Defina la secuencia de entradas y genere el cronograma (diagrama de tiempos).</p>
+        ${legHtml}
+        <div class="timing-controls">
+          <div class="timing-steps" id="timingSteps_${id}">
+            ${timingInputsHtml}
+          </div>
+          <div class="timing-actions">
+            <button class="btn btn-secondary btn-sm" data-addstep="${id}">+ Agregar paso</button>
+            <button class="btn btn-primary btn-sm" data-genwave="${id}" id="genWaveBtn_${id}">📊 Generar Cronograma</button>
+          </div>
+        </div>
+        <canvas id="timingCanvas_${id}" height="220"></canvas>
+      </div>
+
+      ${exs.length > 0 ? `
+      <div class="card">
+        <h3>✏️ Ejercicios Prácticos</h3>
+        <p class="desc">Complete el valor de Q en cada paso. Presione "Mostrar respuesta" para verificar.</p>
+        ${exHtml}
+      </div>` : ''}
+    </div>
+  `;
+
+  // Attach event listeners
+  attachSimListeners(id);
+  attachTimingListeners(id);
+  attachExListeners(id);
+  genWaveform(id);
+}
+
+// ---- Helper: generate exercise timing table ----
+function genExTimingTable(id, exIdx) {
+  const l = LAT[id];
+  const ex = l.exs[exIdx];
+  if (!ex) return '';
+  const initVal = ex.init;
+  let html = '<table><thead><tr>';
+  if (l.inps3) {
+    html += '<th>Paso</th><th>E</th><th>S</th><th>R</th><th>Q</th></tr></thead><tbody>';
+    html += `<tr><td>Init</td><td>—</td><td>—</td><td>—</td><td>${initVal}</td></tr>`;
+    ex.steps.forEach((s,i) => {
+      html += `<tr><td>${i+1}</td>
+        <td class="${s.e==='1'?'high':'low'}">${s.e}</td>
+        <td class="${s.s==='1'?'high':'low'}">${s.s}</td>
+        <td class="${s.r==='1'?'high':'low'}">${s.r}</td>
+        <td class="hold">?</td></tr>`;
+    });
+  } else {
+    const i1 = l.inps[0], i2 = l.inps[1];
+    html += `<th>Paso</th><th>${i1}</th><th>${i2}</th><th>Q</th></tr></thead><tbody>`;
+    html += `<tr><td>Init</td><td>—</td><td>—</td><td>${initVal}</td></tr>`;
+    ex.steps.forEach((s,i) => {
+      const a = l.inps[0].toLowerCase();
+      const b = l.inps[1].toLowerCase();
+      html += `<tr><td>${i+1}</td>
+        <td class="${s[a]==='1'?'high':'low'}">${s[a]}</td>
+        <td class="${s[b]==='1'?'high':'low'}">${s[b]}</td>
+        <td class="hold">?</td></tr>`;
+    });
+  }
+  html += '</tbody></table>';
+  return html;
+}
+
+// ---- Simulator listeners ----
+function attachSimListeners(id) {
+  const l = LAT[id];
+  const applyBtn = document.getElementById('simApplyBtn');
+  const resetBtn = document.getElementById('simResetBtn');
+  if (!applyBtn) return;
+
+  applyBtn.addEventListener('click', () => {
+    const sim = state.sim[id];
+    let a, b, e, result;
+    if (l.inps3) {
+      e = document.getElementById('simE').value;
+      a = document.getElementById('simS').value;
+      b = document.getElementById('simR').value;
+      result = l.next(parseInt(e), parseInt(a), parseInt(b), sim.q);
+    } else {
+      a = document.getElementById('simA').value;
+      b = document.getElementById('simB').value;
+      result = l.next(parseInt(a), parseInt(b), sim.q);
+    }
+    const histEntry = {
+      q: sim.q,
+      qb: sim.qb,
+      a, b,
+      note: result.note,
+      invalid: result.invalid
+    };
+    if (l.inps3) { histEntry.e = e; histEntry.s = a; histEntry.r = b; }
+    sim.q = result.q;
+    sim.qb = result.qb;
+    state.history[id].push(histEntry);
+    renderTab(id);
+  });
+
+  resetBtn.addEventListener('click', () => {
+    state.sim[id] = { q: 0, qb: 1 };
+    state.history[id] = [];
+    renderTab(id);
+  });
+}
+
+// ---- Timing diagram listeners ----
+function attachTimingListeners(id) {
+  // Add step
+  document.querySelector(`[data-addstep="${id}"]`)?.addEventListener('click', () => {
+    const l = LAT[id];
+    const o = {};
+    if (l.inps3) { o.e='1'; o.s='0'; o.r='0'; }
+    else { o[l.inps[0].toLowerCase()]='0'; o[l.inps[1].toLowerCase()]='0'; }
+    state.timingSteps[id].push(o);
+    renderTab(id);
+  });
+
+  // Remove step
+  document.querySelectorAll(`[data-remove="${id}"]`).forEach(el => {
+    el.addEventListener('click', () => {
+      const idx = parseInt(el.dataset.ridx);
+      if (state.timingSteps[id].length <= 1) return;
+      state.timingSteps[id].splice(idx, 1);
+      renderTab(id);
+    });
+  });
+
+  // Select changes
+  document.querySelectorAll(`[data-tstep="${id}"]`).forEach(el => {
+    el.addEventListener('change', () => {
+      const idx = parseInt(el.dataset.tidx);
+      const v = el.dataset.tvar;
+      state.timingSteps[id][idx][v] = el.value;
+    });
+  });
+
+  // Generate waveform
+  document.querySelector(`[data-genwave="${id}"]`)?.addEventListener('click', () => {
+    // Read current values from selects
+    const steps = state.timingSteps[id];
+    document.querySelectorAll(`[data-tstep="${id}"]`).forEach(el => {
+      const idx = parseInt(el.dataset.tidx);
+      const v = el.dataset.tvar;
+      steps[idx][v] = el.value;
+    });
+    genWaveform(id);
+  });
+}
+
+// ---- Theory rendering ----
+function renderTeoria() {
+  return `
+<div class="section active">
+  <h2>📖 Teoría Fundamental de Latches</h2>
+
+  <div class="info-highlight">
+    <strong>🔁 Retroalimentación (Feedback):</strong> Es el principio base de todo latch.
+    La salida se conecta de vuelta a la entrada, creando un <strong>circuito biestable</strong>
+    con dos estados estables: Q=0 o Q=1. Sin feedback, no hay memoria.
+  </div>
+
+  <div class="full-card">
+    <h4>🔁 1. Retroalimentación (Feedback)</h4>
+    <p>
+      Un <strong>latch</strong> es un circuito <strong>biestable</strong> porque tiene
+      <strong>dos estados estables</strong> (Q=0 y Q=1). La clave es la
+      <strong>retroalimentación positiva</strong>: la salida de cada compuerta
+      se conecta a la entrada de la otra, formando un lazo cerrado.
+    </p>
+    <p style="margin-top:8px">
+      <strong>¿Cómo funciona?</strong> Cuando aplicamos una combinación de entradas,
+      el latch "decide" un estado. La retroalimentación mantiene ese estado incluso
+      después de que las entradas vuelven a su valor de reposo.
+    </p>
+  </div>
+
+  <div class="full-card">
+    <h4>🔌 2. Circuito SR con compuertas NOR (cross-coupled)</h4>
+    <p>Diagrama del latch SR-NOR con retroalimentación cruzada:</p>
+    <svg class="circuit-svg" viewBox="0 0 460 270" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+      <rect x="130" y="25" width="90" height="60" rx="5" fill="none" stroke="#e94560" stroke-width="2.5"/>
+      <text x="175" y="55" text-anchor="middle" fill="#e94560" font-size="16" font-weight="bold">NOR</text>
+      <rect x="130" y="150" width="90" height="60" rx="5" fill="none" stroke="#e94560" stroke-width="2.5"/>
+      <text x="175" y="180" text-anchor="middle" fill="#e94560" font-size="16" font-weight="bold">NOR</text>
+      <line x1="20" y1="40" x2="130" y2="40" stroke="#3498db" stroke-width="2.5"/>
+      <text x="10" y="36" fill="#3498db" font-size="16" font-weight="bold">S</text>
+      <circle cx="130" cy="40" r="3" fill="#3498db"/>
+      <line x1="20" y1="170" x2="130" y2="170" stroke="#e67e22" stroke-width="2.5"/>
+      <text x="10" y="166" fill="#e67e22" font-size="16" font-weight="bold">R</text>
+      <circle cx="130" cy="170" r="3" fill="#e67e22"/>
+      <line x1="220" y1="55" x2="370" y2="55" stroke="#2ecc71" stroke-width="2.5" marker-end="url(#arr)"/>
+      <text x="380" y="60" fill="#2ecc71" font-size="16" font-weight="bold">Q</text>
+      <circle cx="220" cy="55" r="3" fill="#2ecc71"/>
+      <line x1="220" y1="180" x2="370" y2="180" stroke="#e74c3c" stroke-width="2.5" marker-end="url(#arr)"/>
+      <text x="375" y="185" fill="#e74c3c" font-size="16" font-weight="bold">Q̅</text>
+      <circle cx="220" cy="180" r="3" fill="#e74c3c"/>
+      <polyline points="220,55 290,55 290,196 130,196"
+                fill="none" stroke="#666" stroke-width="1.8" stroke-dasharray="6,4" stroke-linejoin="round"/>
+      <circle cx="130" cy="196" r="3" fill="#666"/>
+      <polyline points="220,180 310,180 310,75 130,75"
+                fill="none" stroke="#666" stroke-width="1.8" stroke-dasharray="6,4" stroke-linejoin="round"/>
+      <circle cx="130" cy="75" r="3" fill="#666"/>
+      <text x="300" y="120" fill="#666" font-size="11" transform="rotate(90,300,120)">retroalimentación</text>
+    </svg>
+    <p style="color:var(--text2);font-size:.85rem;text-align:center;margin-top:4px;">
+      La salida Q (verde) realimenta a la entrada inferior de la compuerta NOR inferior;
+      Q̅ (rojo) realimenta a la entrada inferior de la NOR superior.
+      Esto crea el <strong>lazo de retroalimentación positiva</strong>.
+    </p>
+  </div>
+
+  <div class="full-card">
+    <h4>🧠 3. Set y Reset</h4>
+    <p>En los latches, los estados estables son exactamente dos:</p>
+    <ul>
+      <li><strong>SET (Q=1, Q̅=0):</strong> se alcanza activando la entrada Set (S=1 en SR-NOR, S̅=0 en SR-NAND, J=1 en JK).</li>
+      <li><strong>RESET (Q=0, Q̅=1):</strong> se alcanza activando la entrada Reset (R=1 en SR-NOR, R̅=0 en SR-NAND, K=1 en JK).</li>
+    </ul>
+    <p style="margin-top:6px">
+      El <strong>estado inválido</strong> (Q = Q̅, ambas salidas iguales) no es estable y debe evitarse.
+      En el latch JK el estado J=K=1 produce <strong>toggle</strong> en lugar de inválido.
+    </p>
+  </div>
+
+  <div class="theory-grid">
+    <div class="concept-card accent-meta">
+      <h4>⚠️ Metaestabilidad</h4>
+      <p>
+        Ocurre cuando el latch queda atrapado entre dos estados estables por un tiempo
+        indefinido. Puede suceder si:
+      </p>
+      <ul>
+        <li>Las entradas cambian exactamente al mismo tiempo</li>
+        <li>Se violan los tiempos de setup/hold</li>
+        <li>La entrada está en nivel inválido (S=R=1 en SR)</li>
+      </ul>
+      <p style="margin-top:6px">
+        El latch eventualmente cae a un estado estable, pero el tiempo es impredecible.
+        Es crítico en diseño digital síncrono.
+      </p>
+    </div>
+
+    <div class="concept-card accent-latchff">
+      <h4>🔄 Latch vs Flip-Flop</h4>
+      <ul>
+        <li><strong>Latch:</strong> sensible al nivel (transparente cuando E=1)</li>
+        <li><strong>Flip-Flop:</strong> sensible al flanco (dispara en rising/falling edge)</li>
+      </ul>
+      <p style="margin-top:6px;">
+        El latch es <strong>transparente</strong>: la salida sigue a la entrada mientras
+        esté habilitado. El flip-flop solo captura el dato en el flanco del reloj.
+      </p>
+    </div>
+  </div>
+
+  <div class="full-card">
+    <h4>📊 4. Comparativa de Latches</h4>
+    <div class="compare-table-wrap">
+      <table>
+        <thead><tr><th>Característica</th><th>SR-NOR</th><th>SR-NAND</th><th>JK-NAND</th><th>JK-NOR</th><th>SR+Enable</th></tr></thead>
+        <tbody>
+          <tr><td>Compuertas</td><td>NOR</td><td>NAND</td><td>NAND</td><td>NOR</td><td>NOR+AND</td></tr>
+          <tr><td>Entradas activas</td><td>Alta (1)</td><td>Baja (0)</td><td>Alta (1)</td><td>Alta (1)</td><td>Alta (1)</td></tr>
+          <tr><td>Estado inválido</td><td class="yes">S=R=1</td><td class="yes">S̅=R̅=0</td><td class="no">No tiene</td><td class="no">No tiene</td><td class="yes">S=R=1</td></tr>
+          <tr><td>Toggle</td><td class="no">No</td><td class="no">No</td><td class="yes">J=K=1</td><td class="yes">J=K=1</td><td class="no">No</td></tr>
+          <tr><td>Hold (E=0)</td><td class="no">No</td><td class="no">No</td><td class="no">No</td><td class="no">No</td><td class="yes">Sí</td></tr>
+          <tr><td>Ecuación característica</td><td>S + R̅·Q</td><td>S̅ + R̅·Q</td><td>J·Q̅ + K̅·Q</td><td>J·Q̅ + K̅·Q</td><td>E·(S + R̅·Q)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="full-card">
+    <h4>🔀 5. Diagrama de Estados</h4>
+    <p>Ejemplo: diagrama de estados del <strong>latch JK</strong></p>
+    <div class="state-diagram">        J=0,K=0
+        ┌────────┐
+        ▼        │
+    ┌──────┐    │
+    │      │────┘
+    │ Q=0  │
+    │      │────┐
+    └──────┘    │
+        ▲        │  J=0,K=1
+        │        │
+        └────────┘
+        J=1,K=0
+
+        J=1,K=1
+        ┌────────┐
+        ▼        │
+    ┌──────┐    │
+    │      │────┘
+    │ Q=1  │
+    │      │────┐
+    └──────┘    │
+        ▲        │  J=1,K=1
+        │        │
+        └────────┘
+        J=0,K=1</div>
+    <p style="color:var(--text2);font-size:.85rem;margin-top:6px;">
+      El estado Q=0 transiciona a Q=1 con J=1,K=0 (Set) o J=1,K=1 (Toggle).
+      El estado Q=1 transiciona a Q=0 con J=0,K=1 (Reset) o J=1,K=1 (Toggle).
+    </p>
+  </div>
+
+  <div class="full-card">
+    <h4>📚 6. Glosario de Conceptos Clave</h4>
+    <div class="def-grid">
+      <div class="def-item">
+        <div class="term">Biestable</div>
+        <div class="def">Circuito con dos estados estables (0 y 1). Puede almacenar 1 bit.</div>
+      </div>
+      <div class="def-item">
+        <div class="term">Retroalimentación</div>
+        <div class="def">Conexión de la salida a la entrada. Crea memoria y permite estados estables.</div>
+      </div>
+      <div class="def-item">
+        <div class="term">Set</div>
+        <div class="def">Acción de poner Q=1 (Q̅=0).</div>
+      </div>
+      <div class="def-item">
+        <div class="term">Reset</div>
+        <div class="def">Acción de poner Q=0 (Q̅=1).</div>
+      </div>
+      <div class="def-item">
+        <div class="term">Toggle</div>
+        <div class="def">Conmutación: Q cambia al valor opuesto (solo en JK).</div>
+      </div>
+      <div class="def-item">
+        <div class="term">Hold</div>
+        <div class="def">Estado de memoria: Q mantiene su valor anterior.</div>
+      </div>
+      <div class="def-item">
+        <div class="term">Activo en baja</div>
+        <div class="def">La entrada se activa con nivel 0 (no con 1). Se denota con barra: S̅, R̅.</div>
+      </div>
+      <div class="def-item">
+        <div class="term">Transparente</div>
+        <div class="def">Cuando E=1, la salida sigue a la entrada (latch habilitado).</div>
+      </div>
+      <div class="def-item">
+        <div class="term">Señal de reloj</div>
+        <div class="def">Señal periódica que sincroniza los cambios en flip-flops (no en latches).</div>
+      </div>
+      <div class="def-item">
+        <div class="term">Metaestabilidad</div>
+        <div class="def">Estado temporario e inestable entre 0 y 1. Debe evitarse en diseño digital.</div>
+      </div>
+    </div>
+  </div>
+</div>`;
+}
+
+// ---- Waveform generation ----
+function genWaveform(id) {
+  const canvas = document.getElementById(`timingCanvas_${id}`);
+  if (!canvas) return;
+  const l = LAT[id];
+  const steps = state.timingSteps[id];
+  if (steps.length === 0) return;
+
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  const W = rect.width;
+  const H = 220;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  ctx.scale(dpr, dpr);
+
+  const pad = { left: 50, right: 20, top: 30, bottom: 20 };
+  const innerW = W - pad.left - pad.right;
+  const n = steps.length;
+  const cellW = innerW / (n + 1);
+
+  const signals = l.inps3
+    ? ['E', 'S', 'R', 'Q', 'Q̅']
+    : [l.inps[0], l.inps[1], 'Q', 'Q̅'];
+  const nSignals = signals.length;
+  const cellH = (H - pad.top - pad.bottom) / nSignals;
+
+  const colors = l.inps3
+    ? { 'E': l.colorInput1, 'S': l.colorInput2, 'R': l.colorInput3, 'Q': '#2ecc71', 'Q̅': '#e74c3c' }
+    : { [l.inps[0]]: l.colorInput1, [l.inps[1]]: l.colorInput2, 'Q': '#2ecc71', 'Q̅': '#e74c3c' };
+
+  // Compute Q progression
+  let qVal = 0;
+  const qHistory = [qVal];
+  for (let i = 0; i < n; i++) {
+    const s = steps[i];
+    if (l.inps3) {
+      const r = l.next(parseInt(s.e), parseInt(s.s), parseInt(s.r), qVal);
+      qVal = r.q;
+    } else {
+      const i1 = l.inps[0].toLowerCase(), i2 = l.inps[1].toLowerCase();
+      const r = l.next(parseInt(s[i1]), parseInt(s[i2]), qVal);
+      qVal = r.q;
+    }
+    qHistory.push(qVal);
+  }
+
+  // Clear
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#1a1a2e';
+  ctx.fillRect(0, 0, W, H);
+
+  // Draw grid
+  ctx.strokeStyle = '#2a2a4a';
+  ctx.lineWidth = 0.5;
+  for (let i = 0; i <= n; i++) {
+    const x = pad.left + i * cellW;
+    ctx.beginPath();
+    ctx.moveTo(x, pad.top);
+    ctx.lineTo(x, H - pad.bottom);
+    ctx.stroke();
+  }
+  for (let i = 0; i <= nSignals; i++) {
+    const y = pad.top + i * cellH;
+    ctx.beginPath();
+    ctx.moveTo(pad.left, y);
+    ctx.lineTo(W - pad.right, y);
+    ctx.stroke();
+  }
+
+  // Draw signals
+  const getVal = (sigIdx, stepIdx) => {
+    if (stepIdx === 0) {
+      if (sigIdx < nSignals - 2) return '0'; // inputs at time 0 are 0
+      if (sigIdx === nSignals - 2) return '0'; // Q initial
+      return '1'; // Q̅ initial
+    }
+    const s = steps[stepIdx - 1];
+    const sig = signals[sigIdx];
+    if (sig === 'Q') return String(qHistory[stepIdx]);
+    if (sig === 'Q̅') return String(1 - qHistory[stepIdx]);
+    // Input signal
+    const varName = sig.toLowerCase();
+    if (l.inps3 && sig === 'E') return s.e;
+    return s[varName] || '0';
+  };
+
+  for (let si = 0; si < nSignals; si++) {
+    const yCenter = pad.top + si * cellH + cellH / 2;
+    const sig = signals[si];
+    const color = colors[sig] || '#aaa';
+
+    // Signal label
+    ctx.fillStyle = color;
+    ctx.font = 'bold 13px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(sig, pad.left / 2, yCenter);
+
+    // Draw waveform
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+
+    // For step 0 (initial), draw from x=pad.left to x=pad.left + cellW/2
+    // Then each step occupies one cell width
+    let prevVal = getVal(si, 0);
+    const segStart = pad.left;
+
+    for (let i = 0; i <= n; i++) {
+      const val = getVal(si, i);
+      const x1 = pad.left + i * cellW;
+      const x0 = i === 0 ? pad.left : pad.left + (i-1) * cellW;
+
+      if (i > 0) {
+        const prevX = pad.left + (i-1) * cellW;
+        // Draw horizontal line at previous value
+        const prevY = prevVal === '1' ? yCenter - cellH/4 : yCenter + cellH/4;
+        ctx.moveTo(prevX, prevY);
+        ctx.lineTo(x1, prevY);
+      }
+
+      // If value changed, draw vertical
+      if (i > 0 && val !== prevVal) {
+        const prevY = prevVal === '1' ? yCenter - cellH/4 : yCenter + cellH/4;
+        const newY = val === '1' ? yCenter - cellH/4 : yCenter + cellH/4;
+        ctx.moveTo(x1, prevY);
+        ctx.lineTo(x1, newY);
+      }
+
+      prevVal = val;
+    }
+
+    ctx.stroke();
+
+    // Draw circles at transition points
+    for (let i = 0; i <= n; i++) {
+      const val = getVal(si, i);
+      const x = pad.left + i * cellW;
+      const y = val === '1' ? yCenter - cellH/4 : yCenter + cellH/4;
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(x, y, 3, 0, Math.PI*2);
+      ctx.fill();
+    }
+  }
+
+// Step labels at top
+  ctx.fillStyle = '#aaa';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'bottom';
+  for (let i = 0; i <= n; i++) {
+    const x = pad.left + i * cellW + cellW / 2;
+    ctx.fillText(i === 0 ? 'Inicio' : String(i), x, pad.top - 4);
+  }
+  ctx.textBaseline = 'top';
+  ctx.fillText('t', pad.left - 10, pad.top - 14);
+}
+
+// ---- Exercise listeners ----
+function attachExListeners(id) {
+  document.querySelectorAll(`[data-exreveal="${id}"]`).forEach(btn => {
+    btn.addEventListener('click', () => {
+      const exIdx = parseInt(btn.dataset.exidx);
+      const eid = `ex_${id}_${exIdx}`;
+      const ansDiv = document.getElementById(`${eid}_answer`);
+      if (ansDiv) {
+        ansDiv.classList.toggle('show');
+        btn.textContent = ansDiv.classList.contains('show') ? 'Ocultar respuesta' : 'Mostrar respuesta';
+      }
+      // Draw exercise timing
+      drawExWaveform(id, exIdx);
+    });
+  });
+}
+
+function drawExWaveform(id, exIdx) {
+  const canvas = document.getElementById(`ex_${id}_${exIdx}_canvas`);
+  if (!canvas) return;
+  const l = LAT[id];
+  const ex = l.exs[exIdx];
+  if (!ex) return;
+  const steps = ex.steps;
+  const n = steps.length;
+  const revealed = document.getElementById(`ex_${id}_${exIdx}_answer`)?.classList.contains('show') || false;
+
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  const W = rect.width;
+  const H = 160;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  ctx.scale(dpr, dpr);
+
+  const pad = { left: 45, right: 15, top: 25, bottom: 15 };
+  const innerW = W - pad.left - pad.right;
+  const cellW = innerW / (n + 1);
+
+  const inps = l.inps3 ? ['E','S','R'] : [l.inps[0], l.inps[1]];
+  const signals = [...inps, 'Q'];
+  const nSignals = signals.length;
+  const cellH = (H - pad.top - pad.bottom) / nSignals;
+
+  const colors = l.inps3
+    ? { 'E': l.colorInput1, 'S': l.colorInput2, 'R': l.colorInput3, 'Q': '#2ecc71' }
+    : { [l.inps[0]]: l.colorInput1, [l.inps[1]]: l.colorInput2, 'Q': '#2ecc71' };
+
+  // Compute Q
+  let qVal = ex.init;
+  const qHist = [qVal];
+  for (let i = 0; i < n; i++) {
+    const s = steps[i];
+    let r;
+    if (l.inps3) r = l.next(parseInt(s.e), parseInt(s.s), parseInt(s.r), qVal);
+    else {
+      const i1 = l.inps[0].toLowerCase(), i2 = l.inps[1].toLowerCase();
+      r = l.next(parseInt(s[i1]), parseInt(s[i2]), qVal);
+    }
+    qVal = r.q;
+    qHist.push(qVal);
+  }
+
+  const getVal = (sigIdx, stepIdx) => {
+    if (stepIdx === 0) {
+      if (sigIdx < nSignals - 1) return '0';
+      return String(ex.init);
+    }
+    const s = steps[stepIdx - 1];
+    const sig = signals[sigIdx];
+    if (sig === 'Q') return revealed ? String(qHist[stepIdx]) : '?';
+    const vn = sig.toLowerCase();
+    return s[vn] !== undefined ? String(s[vn]) : '0';
+  };
+
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#1a1a2e';
+  ctx.fillRect(0, 0, W, H);
+
+  // Grid
+  ctx.strokeStyle = '#2a2a4a';
+  ctx.lineWidth = 0.5;
+  for (let i = 0; i <= n; i++) {
+    const x = pad.left + i * cellW;
+    ctx.beginPath(); ctx.moveTo(x, pad.top); ctx.lineTo(x, H - pad.bottom); ctx.stroke();
+  }
+  for (let i = 0; i <= nSignals; i++) {
+    const y = pad.top + i * cellH;
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(W - pad.right, y); ctx.stroke();
+  }
+
+  for (let si = 0; si < nSignals; si++) {
+    const yCenter = pad.top + si * cellH + cellH / 2;
+    const sig = signals[si];
+    const color = colors[sig] || '#aaa';
+    ctx.fillStyle = color;
+    ctx.font = 'bold 12px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(sig, pad.left / 2, yCenter);
+
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    let prevVal = getVal(si, 0);
+    for (let i = 0; i <= n; i++) {
+      if (sig === 'Q' && !revealed && i > 0) {
+        // Draw unknown as dashed
+        ctx.setLineDash([4, 4]);
+        ctx.strokeStyle = '#666';
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.setLineDash([]);
+        ctx.strokeStyle = color;
+        prevVal = '?';
+        continue;
+      }
+      const val = getVal(si, i);
+      const x = pad.left + i * cellW;
+      const prevX = i > 0 ? pad.left + (i-1) * cellW : pad.left;
+
+      if (val === '?') {
+        // Draw dashed unknown region
+        if (i > 0) {
+          const prevY = prevVal === '1' ? yCenter - cellH/4 : prevVal === '0' ? yCenter + cellH/4 : yCenter;
+          ctx.setLineDash([4, 4]);
+          ctx.strokeStyle = '#555';
+          ctx.beginPath();
+          ctx.moveTo(prevX, prevY);
+          ctx.lineTo(x, yCenter);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.strokeStyle = color;
+          // Question mark
+          ctx.fillStyle = '#666';
+          ctx.font = '16px monospace';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('?', (prevX + x) / 2, yCenter);
+        }
+        prevVal = val;
+        continue;
+      }
+
+      const y = val === '1' ? yCenter - cellH/4 : yCenter + cellH/4;
+      if (i === 0) ctx.moveTo(x, y);
+      else {
+        const prevY = prevVal === '1' ? yCenter - cellH/4 : prevVal === '0' ? yCenter + cellH/4 : yCenter;
+        ctx.lineTo(x, prevY);
+        if (val !== prevVal && prevVal !== '?') {
+          ctx.moveTo(x, prevY);
+          ctx.lineTo(x, y);
+        }
+      }
+      prevVal = val;
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Dots
+    for (let i = 0; i <= n; i++) {
+      const val = getVal(si, i);
+      if (val === '?') continue;
+      const x = pad.left + i * cellW;
+      const y = val === '1' ? yCenter - cellH/4 : yCenter + cellH/4;
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(x, y, 3, 0, Math.PI*2);
+      ctx.fill();
+    }
+  }
+
+  ctx.fillStyle = '#aaa';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'bottom';
+  for (let i = 0; i < n; i++) {
+    const x = pad.left + i * cellW + cellW / 2;
+    ctx.fillText(i+1, x, pad.top - 4);
+  }
+}
+
+// ---- Init on load ----
+window.addEventListener('DOMContentLoaded', init);
+window.addEventListener('resize', () => {
+  const id = state.cur;
+  genWaveform(id);
+  const l = LAT[id];
+  (l.exs || []).forEach((_, idx) => drawExWaveform(id, idx));
+});
+// ---- PWA: register service worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
