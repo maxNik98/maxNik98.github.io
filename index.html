@@ -757,6 +757,7 @@ const LAT = {
 };
 
 const normKey = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+const hasOverline = inps => /[\u0300-\u036f]/.test(inps[0] + inps[1]);
 
 const state = { cur: 'sr-nor', sim: {}, history: [], timingSteps: [], simLast: {}, exerciseIdx: 0, exRevealed: false };
 
@@ -766,8 +767,8 @@ function init() {
     state.history[k] = [];
     if (LAT[k].inps3) state.simLast[k] = { a: '1', b: '0', c: '0' };
     else {
-      const hasBar = /[\u0300-\u036f]/.test(LAT[k].inps[0] + LAT[k].inps[1]);
-      state.simLast[k] = { a: hasBar ? '1' : '0', b: hasBar ? '1' : '0' };
+      const bar = hasOverline(LAT[k].inps);
+      state.simLast[k] = { a: bar ? '1' : '0', b: bar ? '1' : '0' };
     }
   }
   for (const k of Object.keys(LAT)) {
@@ -775,9 +776,9 @@ function init() {
       const o = {};
       if (LAT[k].inps3) { o.e='1'; o.s='0'; o.r='0'; }
       else {
-        const hasBar = /[\u0300-\u036f]/.test(LAT[k].inps[0] + LAT[k].inps[1]);
-        o[normKey(LAT[k].inps[0])]= hasBar ? '1' : '0';
-        o[normKey(LAT[k].inps[1])]= hasBar ? '1' : '0';
+        const bar = hasOverline(LAT[k].inps);
+        o[normKey(LAT[k].inps[0])]= bar ? '1' : '0';
+        o[normKey(LAT[k].inps[1])]= bar ? '1' : '0';
       }
       return o;
     });
@@ -1138,7 +1139,11 @@ function attachTimingListeners(id) {
     const l = LAT[id];
     const o = {};
     if (l.inps3) { o.e='1'; o.s='0'; o.r='0'; }
-    else { o[normKey(l.inps[0])]='0'; o[normKey(l.inps[1])]='0'; }
+    else {
+      const bar = hasOverline(l.inps);
+      o[normKey(l.inps[0])]= bar ? '1' : '0';
+      o[normKey(l.inps[1])]= bar ? '1' : '0';
+    }
     state.timingSteps[id].push(o);
     renderTab(id);
   });
@@ -1491,12 +1496,10 @@ function genWaveform(id) {
     // For step 0 (initial), draw from x=pad.left to x=pad.left + cellW/2
     // Then each step occupies one cell width
     let prevVal = getVal(si, 0);
-    const segStart = pad.left;
 
     for (let i = 0; i <= n; i++) {
       const val = getVal(si, i);
       const x1 = pad.left + i * cellW;
-      const x0 = i === 0 ? pad.left : pad.left + (i-1) * cellW;
 
       if (i > 0) {
         const prevX = pad.left + (i-1) * cellW;
