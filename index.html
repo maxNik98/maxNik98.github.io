@@ -756,6 +756,8 @@ const LAT = {
   }
 };
 
+const normKey = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
 const state = { cur: 'sr-nor', sim: {}, history: [], timingSteps: [], exerciseIdx: 0, exRevealed: false };
 
 function init() {
@@ -767,7 +769,7 @@ function init() {
     state.timingSteps[k] = Array(5).fill(null).map((_,i) => {
       const o = {};
       if (LAT[k].inps3) { o.e='1'; o.s='0'; o.r='0'; }
-      else { o[LAT[k].inps[0].toLowerCase()]='0'; o[LAT[k].inps[1].toLowerCase()]='0'; }
+      else { o[normKey(LAT[k].inps[0])]='0'; o[normKey(LAT[k].inps[1])]='0'; }
       return o;
     });
   }
@@ -792,7 +794,7 @@ function renderTab(id) {
   }
 
   const l = LAT[id];
-  const i1 = l.inps[0].toLowerCase(), i2 = l.inps[1].toLowerCase();
+  const i1 = normKey(l.inps[0]), i2 = normKey(l.inps[1]);
   const c1 = l.colorInput1, c2 = l.colorInput2, c3 = l.colorInput3;
   const inpName1 = l.inps[0], inpName2 = l.inps[1];
 
@@ -1054,8 +1056,8 @@ function genExTimingTable(id, exIdx) {
     html += `<th>Paso</th><th>${i1}</th><th>${i2}</th><th>Q</th></tr></thead><tbody>`;
     html += `<tr><td>Init</td><td>—</td><td>—</td><td>${initVal}</td></tr>`;
     ex.steps.forEach((s,i) => {
-      const a = l.inps[0].toLowerCase();
-      const b = l.inps[1].toLowerCase();
+      const a = normKey(l.inps[0]);
+      const b = normKey(l.inps[1]);
       html += `<tr><td>${i+1}</td>
         <td class="${s[a]==='1'?'high':'low'}">${s[a]}</td>
         <td class="${s[b]==='1'?'high':'low'}">${s[b]}</td>
@@ -1114,7 +1116,7 @@ function attachTimingListeners(id) {
     const l = LAT[id];
     const o = {};
     if (l.inps3) { o.e='1'; o.s='0'; o.r='0'; }
-    else { o[l.inps[0].toLowerCase()]='0'; o[l.inps[1].toLowerCase()]='0'; }
+    else { o[normKey(l.inps[0])]='0'; o[normKey(l.inps[1])]='0'; }
     state.timingSteps[id].push(o);
     renderTab(id);
   });
@@ -1265,7 +1267,7 @@ function renderTeoria() {
   <div class="full-card">
     <h4>⚠️ 0-0 después de estado inválido (Carrera)</h4>
     <p>
-      <strong>Problema critical en SR-NOR:</strong> cuando se tienen <strong>S=1, R=1</strong>
+      <strong>Problema crítico en SR-NOR:</strong> cuando se tienen <strong>S=1, R=1</strong>
       (estado inválido, Q=0, Q̅=0) y luego se pasa a <strong>S=0, R=0</strong> (Hold),
       ambas compuertas NOR ven (0,0) en sus entradas y <strong>ambas intentan ir a 1</strong>.
     </p>
@@ -1299,7 +1301,7 @@ function renderTeoria() {
           <tr><td>Estado inválido</td><td class="yes">S=R=1</td><td class="yes">S̅=R̅=0</td><td class="no">No tiene</td><td class="no">No tiene</td><td class="yes">S=R=1</td><td class="no">No tiene</td></tr>
           <tr><td>Toggle</td><td class="no">No</td><td class="no">No</td><td class="yes">J=K=1</td><td class="yes">J=K=1</td><td class="no">No</td><td class="no">No</td></tr>
           <tr><td>Hold (E=0)</td><td class="no">No</td><td class="no">No</td><td class="no">No</td><td class="no">No</td><td class="yes">Sí</td><td class="yes">Sí</td></tr>
-          <tr><td>Ecuación característica</td><td>S + R̅·Q</td><td>S̅ + R̅·Q</td><td>J·Q̅ + K̅·Q</td><td>J·Q̅ + K̅·Q</td><td>E·(S + R̅·Q)</td><td>EN·D + EN̅·Q</td></tr>
+          <tr><td>Ecuación característica</td><td>S + R̅·Q</td><td>S̅̅ + R̅·Q</td><td>J·Q̅ + K̅·Q</td><td>J·Q̅ + K̅·Q</td><td>E·(S + R̅·Q) + Ē·Q</td><td>EN·D + EN̅·Q</td></tr>
         </tbody>
       </table>
     </div>
@@ -1400,7 +1402,7 @@ function genWaveform(id) {
       const r = l.next(parseInt(s.e), parseInt(s.s), parseInt(s.r), qVal);
       qVal = r.q;
     } else {
-      const i1 = l.inps[0].toLowerCase(), i2 = l.inps[1].toLowerCase();
+      const i1 = normKey(l.inps[0]), i2 = normKey(l.inps[1]);
       const r = l.next(parseInt(s[i1]), parseInt(s[i2]), qVal);
       qVal = r.q;
     }
@@ -1442,7 +1444,7 @@ function genWaveform(id) {
     if (sig === 'Q') return String(qHistory[stepIdx]);
     if (sig === 'Q̅') return String(1 - qHistory[stepIdx]);
     // Input signal
-    const varName = sig.toLowerCase();
+    const varName = normKey(sig);
     if (l.inps3 && sig === 'E') return s.e;
     return s[varName] || '0';
   };
@@ -1579,7 +1581,7 @@ function drawExWaveform(id, exIdx) {
     let r;
     if (l.inps3) r = l.next(parseInt(s.e), parseInt(s.s), parseInt(s.r), qVal);
     else {
-      const i1 = l.inps[0].toLowerCase(), i2 = l.inps[1].toLowerCase();
+      const i1 = normKey(l.inps[0]), i2 = normKey(l.inps[1]);
       r = l.next(parseInt(s[i1]), parseInt(s[i2]), qVal);
     }
     qVal = r.q;
@@ -1594,7 +1596,7 @@ function drawExWaveform(id, exIdx) {
     const s = steps[stepIdx - 1];
     const sig = signals[sigIdx];
     if (sig === 'Q') return revealed ? String(qHist[stepIdx]) : '?';
-    const vn = sig.toLowerCase();
+    const vn = normKey(sig);
     return s[vn] !== undefined ? String(s[vn]) : '0';
   };
 
