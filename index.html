@@ -1405,7 +1405,41 @@ function renderTeoria() {
       </div>
     </div>
   </div>
+
+  <div class="full-card">
+    <h4>📋 7. Tablas de Verdad de todos los Latches</h4>
+    <p style="color:var(--text2);font-size:.9rem;margin-bottom:12px;">
+      A continuación se muestran las tablas de verdad de los seis tipos de latch
+      para compararlas rápidamente:
+    </p>
+    ${['sr-nor','sr-nand','jk-nand','jk-nor','enable','d-latch'].map(k => `
+      <div style="margin:16px 0;">
+        <h5 style="color:var(--blue);margin-bottom:6px;font-size:.95rem;">${LAT[k].name}</h5>
+        ${genTT(LAT[k])}
+      </div>
+    `).join('')}
+  </div>
 </div>`;
+}
+
+// ---- Helper: render truth table from latch data ----
+function genTT(l) {
+  const tt = l.tt;
+  let html = `<table><thead><tr>${tt[0].map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>`;
+  for (let i=1; i<tt.length; i++) {
+    const r = tt[i];
+    html += '<tr>';
+    r.forEach((c,j) => {
+      if (c==='0') html += `<td class="low">0</td>`;
+      else if (c==='1') html += `<td class="high">1</td>`;
+      else if (c==='Q₀'||c==='Q̅₀') html += `<td class="hold">${c}</td>`;
+      else if (c==='—') html += `<td>—</td>`;
+      else html += `<td>${c}</td>`;
+    });
+    html += '</tr>';
+  }
+  html += '</tbody></table>';
+  return html;
 }
 
 // ---- Waveform generation ----
