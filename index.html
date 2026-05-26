@@ -442,13 +442,13 @@ canvas {
   <h1>🔌 Estudio de Latches <small>Sistemas Digitales</small></h1>
 
   <div class="tabs" id="tabBar">
-    <button class="tab-btn active" data-tab="sr-nor">SR (NOR)</button>
+    <button class="tab-btn active" data-tab="teoria">📖 Teoría</button>
+    <button class="tab-btn" data-tab="sr-nor">SR (NOR)</button>
     <button class="tab-btn" data-tab="sr-nand">SR (NAND)</button>
     <button class="tab-btn" data-tab="jk-nand">JK (NAND)</button>
     <button class="tab-btn" data-tab="jk-nor">JK (NOR)</button>
     <button class="tab-btn" data-tab="enable">Enable</button>
     <button class="tab-btn" data-tab="d-latch">D (Delay)</button>
-    <button class="tab-btn" data-tab="teoria">📖 Teoría</button>
   </div>
 
   <div id="contentArea"></div>
@@ -759,7 +759,7 @@ const LAT = {
 const normKey = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 const hasOverline = inps => /[\u0300-\u036f]/.test(inps[0] + inps[1]);
 
-const state = { cur: 'sr-nor', sim: {}, history: [], timingSteps: [], simLast: {}, exerciseIdx: 0, exRevealed: false };
+const state = { cur: 'teoria', sim: {}, history: [], timingSteps: [], simLast: {}, exerciseIdx: 0, exRevealed: false };
 
 function init() {
   for (const k of Object.keys(LAT)) {
@@ -1193,11 +1193,33 @@ function renderTeoria() {
   </div>
 
   <div class="full-card">
-    <h4>🔁 1. Retroalimentación (Feedback)</h4>
+    <h4>❓ ¿Qué es un Latch?</h4>
     <p>
-      Un <strong>latch</strong> es un circuito <strong>biestable</strong> porque tiene
-      <strong>dos estados estables</strong> (Q=0 y Q=1). La clave es la
-      <strong>retroalimentación positiva</strong>: la salida de cada compuerta
+      Un <strong>latch</strong> es un <strong>circuito biestable</strong> que puede
+      almacenar un bit de información (0 o 1). Se llama <em>"biestable"</em> porque
+      tiene dos estados estables y puede mantener su valor incluso cuando las entradas
+      cambian. Es el bloque de memoria más básico en electrónica digital.
+    </p>
+    <p style="margin-top:8px">
+      Todos los latches tienen:
+    </p>
+    <ul style="color:var(--text2);font-size:.9rem;line-height:1.7;padding-left:20px;margin-top:4px;">
+      <li><strong>Entradas de control</strong> que permiten escribir un valor (Set, Reset, J, K, D, Enable).</li>
+      <li><strong>Una salida Q</strong> que almacena el bit actual.</li>
+      <li><strong>Una salida Q̅</strong> (inversa de Q), normalmente complementaria.</li>
+      <li><strong>Retroalimentación positiva</strong> (realimentación cruzada) para mantener el estado.</li>
+    </ul>
+    <p style="margin-top:8px">
+      Según el tipo de compuertas y entradas, existen variantes como
+      <strong>SR</strong>, <strong>JK</strong>, <strong>D</strong> y
+      <strong>Enable</strong>, cada una con distintas propiedades.
+    </p>
+  </div>
+
+  <div class="full-card">
+    <h4>🔁 2. Retroalimentación (Feedback)</h4>
+    <p>
+      La clave del latch es la <strong>retroalimentación positiva</strong>: la salida de cada compuerta
       se conecta a la entrada de la otra, formando un lazo cerrado.
     </p>
     <p style="margin-top:8px">
@@ -1208,7 +1230,7 @@ function renderTeoria() {
   </div>
 
   <div class="full-card">
-    <h4>🔌 2. Circuito SR con compuertas NOR (cross-coupled)</h4>
+    <h4>🔌 3. Circuito SR con compuertas NOR (cross-coupled)</h4>
     <p>Diagrama del latch SR-NOR con retroalimentación cruzada:</p>
     <svg class="circuit-svg" viewBox="0 0 460 270" xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -1248,7 +1270,7 @@ function renderTeoria() {
   </div>
 
   <div class="full-card">
-    <h4>🧠 3. Set y Reset</h4>
+    <h4>🧠 4. Set y Reset</h4>
     <p>En los latches, los estados estables son exactamente dos:</p>
     <ul>
       <li><strong>SET (Q=1, Q̅=0):</strong> se alcanza activando la entrada Set (S=1 en SR-NOR, S̅=0 en SR-NAND, J=1 en JK).</li>
@@ -1318,7 +1340,7 @@ function renderTeoria() {
   </div>
 
   <div class="full-card">
-    <h4>📊 4. Comparativa de Latches</h4>
+    <h4>📊 5. Comparativa de Latches</h4>
     <div class="compare-table-wrap">
       <table>
         <thead><tr><th>Característica</th><th>SR-NOR</th><th>SR-NAND</th><th>JK-NAND</th><th>JK-NOR</th><th>SR+Enable</th><th>D (Delay)</th></tr></thead>
@@ -1335,7 +1357,7 @@ function renderTeoria() {
   </div>
 
   <div class="full-card">
-    <h4>📚 5. Glosario de Conceptos Clave</h4>
+    <h4>📚 6. Glosario de Conceptos Clave</h4>
     <div class="def-grid">
       <div class="def-item">
         <div class="term">Biestable</div>
