@@ -758,18 +758,27 @@ const LAT = {
 
 const normKey = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
-const state = { cur: 'sr-nor', sim: {}, history: [], timingSteps: [], exerciseIdx: 0, exRevealed: false };
+const state = { cur: 'sr-nor', sim: {}, history: [], timingSteps: [], simLast: {}, exerciseIdx: 0, exRevealed: false };
 
 function init() {
   for (const k of Object.keys(LAT)) {
     state.sim[k] = { q: 0, qb: 1 };
     state.history[k] = [];
+    if (LAT[k].inps3) state.simLast[k] = { a: '1', b: '0', c: '0' };
+    else {
+      const hasBar = /[\u0300-\u036f]/.test(LAT[k].inps[0] + LAT[k].inps[1]);
+      state.simLast[k] = { a: hasBar ? '1' : '0', b: hasBar ? '1' : '0' };
+    }
   }
   for (const k of Object.keys(LAT)) {
     state.timingSteps[k] = Array(5).fill(null).map((_,i) => {
       const o = {};
       if (LAT[k].inps3) { o.e='1'; o.s='0'; o.r='0'; }
-      else { o[normKey(LAT[k].inps[0])]='0'; o[normKey(LAT[k].inps[1])]='0'; }
+      else {
+        const hasBar = /[\u0300-\u036f]/.test(LAT[k].inps[0] + LAT[k].inps[1]);
+        o[normKey(LAT[k].inps[0])]= hasBar ? '1' : '0';
+        o[normKey(LAT[k].inps[1])]= hasBar ? '1' : '0';
+      }
       return o;
     });
   }
@@ -842,36 +851,46 @@ function renderTab(id) {
   }
 
   const sim = state.sim[id];
+  const hist = state.history[id];
   let noteClass = '';
-  let noteText = 'Hold - Q no cambia';
-  if (sim.q===0 && sim.qb===0) { noteClass='invalid'; noteText='⚠ Inválido'; }
-  else if (sim.q===1 && sim.qb===0) { noteText='Set - Q=1'; }
-  else if (sim.q===0 && sim.qb===1) { noteText='Reset - Q=0'; }
+  let noteText = 'Sin operaciones';
+  if (hist.length > 0) {
+    const last = hist[hist.length-1];
+    noteClass = last.invalid ? 'invalid' : (last.note==='Set' ? 'high' : (last.note==='Reset' ? 'low' : 'hold'));
+    noteText = last.invalid ? '⚠ Inválido' : last.note;
+  }
 
   let simInputsHtml = '';
+  const last = state.simLast[id] || { a:'0', b:'0', c:'0' };
   if (l.inps3) {
     simInputsHtml = `
       <label>E:</label>
       <select id="simE">
-        <option value="0">0</option>
-        <option value="1" selected>1</option>
+        <option value="0" ${last.a==='0'?'selected':''}>0</option>
+        <option value="1" ${last.a==='1'?'selected':''}>1</option>
       </select>
       <label>S:</label>
-      <select id="simS"><option value="0">0</option><option value="1">1</option></select>
+      <select id="simS">
+        <option value="0" ${last.b==='0'?'selected':''}>0</option>
+        <option value="1" ${last.b==='1'?'selected':''}>1</option>
+      </select>
       <label>R:</label>
-      <select id="simR"><option value="0">0</option><option value="1">1</option></select>
+      <select id="simR">
+        <option value="0" ${last.c==='0'?'selected':''}>0</option>
+        <option value="1" ${last.c==='1'?'selected':''}>1</option>
+      </select>
     `;
   } else {
     simInputsHtml = `
       <label>${inpName1}:</label>
       <select id="simA">
-        <option value="0">0</option>
-        <option value="1">1</option>
+        <option value="0" ${last.a==='0'?'selected':''}>0</option>
+        <option value="1" ${last.a==='1'?'selected':''}>1</option>
       </select>
       <label>${inpName2}:</label>
       <select id="simB">
-        <option value="0">0</option>
-        <option value="1">1</option>
+        <option value="0" ${last.b==='0'?'selected':''}>0</option>
+        <option value="1" ${last.b==='1'?'selected':''}>1</option>
       </select>
     `;
   }
@@ -880,7 +899,6 @@ function renderTab(id) {
   let stateLabel = 'Q';
   if (noteClass==='invalid') { stateClass='invalid-state'; stateLabel='⚠'; }
 
-  const hist = state.history[id];
   let histHtml = '';
   if (hist.length > 0) {
     let hdr = `<th>Paso</th><th>${inpName1}</th><th>${inpName2}</th>`;
@@ -1045,10 +1063,11 @@ function genExTimingTable(id, exIdx) {
     html += '<th>Paso</th><th>E</th><th>S</th><th>R</th><th>Q</th></tr></thead><tbody>';
     html += `<tr><td>Init</td><td>—</td><td>—</td><td>—</td><td>${initVal}</td></tr>`;
     ex.steps.forEach((s,i) => {
+      const ve = String(s.e), vs = String(s.s), vr = String(s.r);
       html += `<tr><td>${i+1}</td>
-        <td class="${s.e==='1'?'high':'low'}">${s.e}</td>
-        <td class="${s.s==='1'?'high':'low'}">${s.s}</td>
-        <td class="${s.r==='1'?'high':'low'}">${s.r}</td>
+        <td class="${ve==='1'?'high':'low'}">${ve}</td>
+        <td class="${vs==='1'?'high':'low'}">${vs}</td>
+        <td class="${vr==='1'?'high':'low'}">${vr}</td>
         <td class="hold">?</td></tr>`;
     });
   } else {
@@ -1058,9 +1077,10 @@ function genExTimingTable(id, exIdx) {
     ex.steps.forEach((s,i) => {
       const a = normKey(l.inps[0]);
       const b = normKey(l.inps[1]);
+      const va = String(s[a]), vb = String(s[b]);
       html += `<tr><td>${i+1}</td>
-        <td class="${s[a]==='1'?'high':'low'}">${s[a]}</td>
-        <td class="${s[b]==='1'?'high':'low'}">${s[b]}</td>
+        <td class="${va==='1'?'high':'low'}">${va}</td>
+        <td class="${vb==='1'?'high':'low'}">${vb}</td>
         <td class="hold">?</td></tr>`;
     });
   }
@@ -1082,10 +1102,12 @@ function attachSimListeners(id) {
       e = document.getElementById('simE').value;
       a = document.getElementById('simS').value;
       b = document.getElementById('simR').value;
+      state.simLast[id] = { a: e, b: a, c: b };
       result = l.next(parseInt(e), parseInt(a), parseInt(b), sim.q);
     } else {
       a = document.getElementById('simA').value;
       b = document.getElementById('simB').value;
+      state.simLast[id] = { a, b };
       result = l.next(parseInt(a), parseInt(b), sim.q);
     }
     const histEntry = {
